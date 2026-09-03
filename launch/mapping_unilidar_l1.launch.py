@@ -17,6 +17,10 @@ def generate_launch_description():
         'use_wheel_vel', default_value='false',
         description='Fuse wheel odometry velocity into the state estimate.')
 
+    wheel_vel_meas_cov_arg = DeclareLaunchArgument(
+        'wheel_vel_meas_cov', default_value='0.01',
+        description='Wheel velocity measurement variance; lower trusts the wheels more.')
+
     # Node parameters, including those from the YAML configuration file
     laser_mapping_params = [
         PathJoinSubstitution([
@@ -35,6 +39,7 @@ def generate_launch_description():
             'cube_side_length': 1000.0,  # Option: 1000
             'runtime_pos_log_enable': False,  # Option: True
             'wheel.use_wheel_vel': ParameterValue(LaunchConfiguration('use_wheel_vel'), value_type=bool),
+            'wheel.wheel_vel_meas_cov': ParameterValue(LaunchConfiguration('wheel_vel_meas_cov'), value_type=float),
         }
     ]
 
@@ -65,6 +70,7 @@ def generate_launch_description():
     ld = LaunchDescription([
         rviz_arg,
         use_wheel_vel_arg,
+        wheel_vel_meas_cov_arg,
         laser_mapping_node,
         GroupAction(
             actions=[rviz_node],
