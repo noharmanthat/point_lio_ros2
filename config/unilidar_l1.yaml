@@ -47,6 +47,15 @@
                           0.0, 1.0, 0.0,
                           0.0, 0.0, 1.0 ] # ulhk 4 utbm 3
 
+        wheel:
+            use_wheel_vel: false     # overridden by the launch argument
+            wheel_vel_topic: "/odom"
+            wheel_vel_meas_cov: 0.01 # lower = trust the wheels more
+            # RPY of the IMU frame as seen from the wheel-odometry (base_link)
+            # frame. Must match the URDF joint that mounts the lidar, otherwise
+            # the forward velocity is injected along the wrong axis.
+            wheel_vel_rpy: [0.0, 0.78539816, 0.0]
+
         odometry: 
             publish_odometry_without_downsample: true  
 

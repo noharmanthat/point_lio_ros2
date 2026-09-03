@@ -358,6 +358,18 @@ void imu_cbk(const sensor_msgs::msg::Imu::SharedPtr msg_in) {
     sig_buffer.notify_all();
 }
 
+V3D wheel_vel_raw(Zero3d);
+bool wheel_vel_fresh = false;
+M3D Wheel_R_wrt_IMU(Eye3d);
+
+void wheel_vel_cbk(const nav_msgs::msg::Odometry::SharedPtr msg) {
+    mtx_buffer.lock();
+    wheel_vel_raw << msg->twist.twist.linear.x, msg->twist.twist.linear.y, msg->twist.twist.linear.z;
+    wheel_vel_fresh = true;
+    mtx_buffer.unlock();
+    sig_buffer.notify_all();
+}
+
 bool sync_packages(MeasureGroup &meas) {
     if (!imu_en) {
         if (!lidar_buffer.empty()) {
@@ -746,6 +758,18 @@ int main(int argc, char **argv) {
 
     kf_input.init_dyn_share_modified(get_f_input, df_dx_input, h_model_input);
     kf_output.init_dyn_share_modified_2h(get_f_output, df_dx_output, h_model_output, h_model_IMU_output);
+    kf_output.set_vel_model(h_model_VEL_output);
+    {
+        const double r = wheel_vel_rpy[0], p = wheel_vel_rpy[1], y = wheel_vel_rpy[2];
+        // URDF gives the IMU frame as seen from the wheel-odometry frame; the
+        // transpose takes a velocity the other way, into the IMU frame.
+        Wheel_R_wrt_IMU = (Eigen::AngleAxisd(y, V3D::UnitZ()) * Eigen::AngleAxisd(p, V3D::UnitY()) *
+                           Eigen::AngleAxisd(r, V3D::UnitX())).toRotationMatrix().transpose();
+    }
+    if (use_wheel_vel) {
+        cout << "wheel velocity fusion ENABLED on " << wheel_vel_topic
+             << ", meas_cov " << wheel_vel_meas_cov << endl;
+    }
     Eigen::Matrix<double, 24, 24> P_init = MD(24, 24)::Identity() * 0.01;
     P_init.block<3, 3>(21, 21) = MD(3, 3)::Identity() * 0.0001;
     P_init.block<6, 6>(15, 15) = MD(6, 6)::Identity() * 0.001;
@@ -781,6 +805,10 @@ int main(int argc, char **argv) {
     sub_pcl = nh->create_subscription<sensor_msgs::msg::PointCloud2>(lid_topic, rclcpp::SensorDataQoS(), standard_pcl_cbk);
     // }
     auto sub_imu = nh->create_subscription<sensor_msgs::msg::Imu>(imu_topic, 200000, imu_cbk);
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_wheel_vel;
+    if (use_wheel_vel) {
+        sub_wheel_vel = nh->create_subscription<nav_msgs::msg::Odometry>(wheel_vel_topic, 200, wheel_vel_cbk);
+    }
 
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubLaserCloudFullRes;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubLaserCloudFullRes_body;
@@ -1035,6 +1063,17 @@ int main(int argc, char **argv) {
                     kf_output.predict(dt, Q_output, input_in, true, false);
                     propag_time += omp_get_wtime() - propag_state_start;
                     time_predict_last_const = time_current;
+
+                    // Correct the propagated state with wheel velocity before it
+                    // is used as the scan-matching initial guess. Gated on a new
+                    // message so the update runs at odometry rate, not point rate.
+                    if (use_wheel_vel && wheel_vel_fresh) {
+                        mtx_buffer.lock();
+                        wheel_vel_body = Wheel_R_wrt_IMU * wheel_vel_raw;
+                        wheel_vel_fresh = false;
+                        mtx_buffer.unlock();
+                        kf_output.update_iterated_dyn_share_VEL();
+                    }
                     // if(k == 0)
                     // {
                     //     fout_imu_pbp << Measures.lidar_last_time - first_lidar_time << " " << imu_last.angular_velocity.x << " " << imu_last.angular_velocity.y << " " << imu_last.angular_velocity.z \

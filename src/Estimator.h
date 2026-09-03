@@ -25,6 +25,8 @@ extern int effct_feat_num;
 extern int k;
 extern int idx;
 extern V3D angvel_avr, acc_avr;
+// Latest wheel-odometry linear velocity, already rotated into the IMU frame.
+extern V3D wheel_vel_body;
 
 extern V3D Lidar_T_wrt_IMU; //(Zero3d);
 extern M3D Lidar_R_wrt_IMU; //(Eye3d);
@@ -110,6 +112,8 @@ void h_model_input(state_input &s, esekfom::dyn_share_modified<double> &ekfom_da
 void h_model_output(state_output &s, esekfom::dyn_share_modified<double> &ekfom_data);
 
 void h_model_IMU_output(state_output &s, esekfom::dyn_share_modified<double> &ekfom_data);
+
+void h_model_VEL_output(state_output &s, esekfom::dyn_share_modified<double> &ekfom_data);
 
 void pointBodyToWorld(PointType const *const pi, PointType *const po);
 

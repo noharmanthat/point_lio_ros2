@@ -20,6 +20,7 @@ state_input state_in;
 state_output state_out;
 input_ikfom input_in;
 V3D angvel_avr, acc_avr;
+V3D wheel_vel_body(Zero3d);
 
 V3D Lidar_T_wrt_IMU(Zero3d);
 M3D Lidar_R_wrt_IMU(Eye3d);
@@ -433,3 +434,10 @@ void pointBodyToWorld(PointType const * const pi, PointType * const po)
 }
 
 const bool time_list(PointType &x, PointType &y) {return (x.curvature < y.curvature);};
+
+void h_model_VEL_output(state_output &s, esekfom::dyn_share_modified<double> &ekfom_data)
+{
+	// wheel_vel_body is in the IMU frame; s.vel is in the world frame.
+	ekfom_data.z_VEL = s.rot.normalized() * wheel_vel_body - s.vel;
+	ekfom_data.R_VEL << wheel_vel_meas_cov, wheel_vel_meas_cov, wheel_vel_meas_cov;
+}

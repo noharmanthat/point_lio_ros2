@@ -68,6 +68,8 @@ struct dyn_share_modified
 	Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> h_x;
 	Eigen::Matrix<T, 6, 1> z_IMU;
 	Eigen::Matrix<T, 6, 1> R_IMU;
+	Eigen::Matrix<T, 3, 1> z_VEL;
+	Eigen::Matrix<T, 3, 1> R_VEL;
 	bool satu_check[6];
 };
 
@@ -128,6 +130,13 @@ public:
 		x_.build_SO3_state();
 		x_.build_vect_state();
 		x_.build_SEN_state();
+	}
+
+	// Registered separately from the two models above so that enabling wheel
+	// fusion does not disturb the existing initialisation call sites.
+	void set_vel_model(measurementModel_dyn_share_modified h_dyn_share_in3)
+	{
+		h_dyn_share_modified_3 = h_dyn_share_in3;
 	}
 
 	// iterated error state EKF propogation
@@ -328,6 +337,45 @@ public:
 		}
 		return;
 	}
+
+	// Wheel-odometry velocity update. Mirrors update_iterated_dyn_share_IMU,
+	// but the measurement is the world-frame velocity state directly, so H is
+	// identity on vel (indices 12..14) rather than a sum of two blocks.
+	void update_iterated_dyn_share_VEL() {
+
+		dyn_share_modified<scalar_type> dyn_share;
+		for(int i=0; i<maximum_iter; i++)
+		{
+			dyn_share.valid = true;
+			h_dyn_share_modified_3(x_, dyn_share);
+
+			Matrix<scalar_type, 3, 1> z = dyn_share.z_VEL;
+
+			Matrix<double, 30, 3> PHT;
+			Matrix<double, 3, 30> HP;
+			Matrix<double, 3, 3> HPHT;
+			PHT.setZero();
+			HP.setZero();
+			HPHT.setZero();
+			for (int l_ = 0; l_ < 3; l_++)
+			{
+				PHT.col(l_) = P_.col(12+l_);
+				HP.row(l_) = P_.row(12+l_);
+			}
+			for (int l_ = 0; l_ < 3; l_++)
+			{
+				HPHT.col(l_) = HP.col(12+l_);
+				HPHT(l_, l_) += dyn_share.R_VEL(l_);
+			}
+			Eigen::Matrix<double, 30, 3> K = PHT * HPHT.inverse();
+
+			Matrix<scalar_type, n, 1> dx_ = K * z;
+
+			P_ -= K * HP;
+			x_.boxplus(dx_);
+		}
+		return;
+	}
 	
 	void change_x(state &input_state)
 	{
@@ -377,6 +425,8 @@ private:
 	measurementModel_dyn_share_modified *h_dyn_share_modified_1;
 
 	measurementModel_dyn_share_modified *h_dyn_share_modified_2;
+
+	measurementModel_dyn_share_modified *h_dyn_share_modified_3;
 
 	int maximum_iter = 0;
 	scalar_type limit[n];

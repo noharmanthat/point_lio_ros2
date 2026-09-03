@@ -3,6 +3,7 @@ from launch.actions import GroupAction, DeclareLaunchArgument
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 
 
@@ -11,6 +12,10 @@ def generate_launch_description():
     rviz_arg = DeclareLaunchArgument(
         'rviz', default_value='true',
         description='Flag to launch RViz.')
+
+    use_wheel_vel_arg = DeclareLaunchArgument(
+        'use_wheel_vel', default_value='false',
+        description='Fuse wheel odometry velocity into the state estimate.')
 
     # Node parameters, including those from the YAML configuration file
     laser_mapping_params = [
@@ -29,6 +34,7 @@ def generate_launch_description():
             'filter_size_map': 0.1,  # Options: 0.5, 0.3, 0.15, 0.1
             'cube_side_length': 1000.0,  # Option: 1000
             'runtime_pos_log_enable': False,  # Option: True
+            'wheel.use_wheel_vel': ParameterValue(LaunchConfiguration('use_wheel_vel'), value_type=bool),
         }
     ]
 
@@ -58,6 +64,7 @@ def generate_launch_description():
     # Assemble the launch description
     ld = LaunchDescription([
         rviz_arg,
+        use_wheel_vel_arg,
         laser_mapping_node,
         GroupAction(
             actions=[rviz_node],

@@ -34,6 +34,12 @@ extern double laser_point_cov, acc_norm;
 extern double acc_cov_input, gyr_cov_input, vel_cov;
 extern double gyr_cov_output, acc_cov_output, b_gyr_cov, b_acc_cov;
 extern double imu_meas_acc_cov, imu_meas_omg_cov;
+extern bool use_wheel_vel;
+extern std::string wheel_vel_topic;
+extern double wheel_vel_meas_cov;
+// RPY of the IMU frame as seen from the wheel-odometry frame; copy straight
+// from the URDF joint that mounts the lidar.
+extern std::vector<double> wheel_vel_rpy;
 extern int lidar_type, pcd_save_interval;
 extern std::vector<double> gravity_init, gravity;
 extern std::vector<double> extrinT;
