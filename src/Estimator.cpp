@@ -70,11 +70,12 @@ Eigen::Matrix<double, 24, 1> get_f_input(state_input &s, const input_ikfom &in)
 	Eigen::Matrix<double, 24, 1> res = Eigen::Matrix<double, 24, 1>::Zero();
 	vect3 omega;
 	in.gyro.boxminus(omega, s.bg);
-	vect3 a_inertial = s.rot.normalized() * (in.acc-s.ba); 
-	for(int i = 0; i < 3; i++ ){
+	vect3 a_inertial = s.rot.normalized() * (in.acc - s.ba);
+	for (int i = 0; i < 3; i++)
+	{
 		res(i) = s.vel[i];
-		res(i + 3) =  omega[i]; 
-		res(i + 12) = a_inertial[i] + s.gravity[i]; 
+		res(i + 3) = omega[i];
+		res(i + 12) = a_inertial[i] + s.gravity[i];
 	}
 	return res;
 }
@@ -82,11 +83,12 @@ Eigen::Matrix<double, 24, 1> get_f_input(state_input &s, const input_ikfom &in)
 Eigen::Matrix<double, 30, 1> get_f_output(state_output &s, const input_ikfom &in)
 {
 	Eigen::Matrix<double, 30, 1> res = Eigen::Matrix<double, 30, 1>::Zero();
-	vect3 a_inertial = s.rot.normalized() * s.acc; 
-	for(int i = 0; i < 3; i++ ){
+	vect3 a_inertial = s.rot.normalized() * s.acc;
+	for (int i = 0; i < 3; i++)
+	{
 		res(i) = s.vel[i];
-		res(i + 3) = s.omg[i]; 
-		res(i + 12) = a_inertial[i] + s.gravity[i]; 
+		res(i + 3) = s.omg[i];
+		res(i + 12) = a_inertial[i] + s.gravity[i];
 	}
 	return res;
 }
@@ -99,13 +101,13 @@ Eigen::Matrix<double, 24, 24> df_dx_input(state_input &s, const input_ikfom &in)
 	in.acc.boxminus(acc_, s.ba);
 	vect3 omega;
 	in.gyro.boxminus(omega, s.bg);
-	cov.template block<3, 3>(12, 3) = -s.rot.normalized().toRotationMatrix()*MTK::hat(acc_);
+	cov.template block<3, 3>(12, 3) = -s.rot.normalized().toRotationMatrix() * MTK::hat(acc_);
 	cov.template block<3, 3>(12, 18) = -s.rot.normalized().toRotationMatrix();
 	// Eigen::Matrix<state_ikfom::scalar, 2, 1> vec = Eigen::Matrix<state_ikfom::scalar, 2, 1>::Zero();
 	// Eigen::Matrix<state_ikfom::scalar, 3, 2> grav_matrix;
 	// s.S2_Mx(grav_matrix, vec, 21);
-	cov.template block<3, 3>(12, 21) = Eigen::Matrix3d::Identity(); // grav_matrix; 
-	cov.template block<3, 3>(3, 15) = -Eigen::Matrix3d::Identity(); 
+	cov.template block<3, 3>(12, 21) = Eigen::Matrix3d::Identity(); // grav_matrix;
+	cov.template block<3, 3>(3, 15) = -Eigen::Matrix3d::Identity();
 	return cov;
 }
 
@@ -123,13 +125,13 @@ Eigen::Matrix<double, 30, 30> df_dx_output(state_output &s, const input_ikfom &i
 {
 	Eigen::Matrix<double, 30, 30> cov = Eigen::Matrix<double, 30, 30>::Zero();
 	cov.template block<3, 3>(0, 12) = Eigen::Matrix3d::Identity();
-	cov.template block<3, 3>(12, 3) = -s.rot.normalized().toRotationMatrix()*MTK::hat(s.acc);
+	cov.template block<3, 3>(12, 3) = -s.rot.normalized().toRotationMatrix() * MTK::hat(s.acc);
 	cov.template block<3, 3>(12, 18) = s.rot.normalized().toRotationMatrix();
 	// Eigen::Matrix<state_ikfom::scalar, 2, 1> vec = Eigen::Matrix<state_ikfom::scalar, 2, 1>::Zero();
 	// Eigen::Matrix<state_ikfom::scalar, 3, 2> grav_matrix;
 	// s.S2_Mx(grav_matrix, vec, 21);
-	cov.template block<3, 3>(12, 21) = Eigen::Matrix3d::Identity(); // grav_matrix; 
-	cov.template block<3, 3>(3, 15) = Eigen::Matrix3d::Identity(); 
+	cov.template block<3, 3>(12, 21) = Eigen::Matrix3d::Identity(); // grav_matrix;
+	cov.template block<3, 3>(3, 15) = Eigen::Matrix3d::Identity();
 	return cov;
 }
 
@@ -144,36 +146,37 @@ Eigen::Matrix<double, 30, 30> df_dx_output(state_output &s, const input_ikfom &i
 // 	return cov;
 // }
 
-vect3 SO3ToEuler(const SO3 &orient) 
+vect3 SO3ToEuler(const SO3 &orient)
 {
 	Eigen::Matrix<double, 3, 1> _ang;
 	Eigen::Vector4d q_data = orient.coeffs().transpose();
-	//scalar w=orient.coeffs[3], x=orient.coeffs[0], y=orient.coeffs[1], z=orient.coeffs[2];
-	double sqw = q_data[3]*q_data[3];
-	double sqx = q_data[0]*q_data[0];
-	double sqy = q_data[1]*q_data[1];
-	double sqz = q_data[2]*q_data[2];
+	// scalar w=orient.coeffs[3], x=orient.coeffs[0], y=orient.coeffs[1], z=orient.coeffs[2];
+	double sqw = q_data[3] * q_data[3];
+	double sqx = q_data[0] * q_data[0];
+	double sqy = q_data[1] * q_data[1];
+	double sqz = q_data[2] * q_data[2];
 	double unit = sqx + sqy + sqz + sqw; // if normalized is one, otherwise is correction factor
-	double test = q_data[3]*q_data[1] - q_data[2]*q_data[0];
+	double test = q_data[3] * q_data[1] - q_data[2] * q_data[0];
 
-	if (test > 0.49999*unit) { // singularity at north pole
-	
-		_ang << 2 * std::atan2(q_data[0], q_data[3]), M_PI/2, 0;
+	if (test > 0.49999 * unit)
+	{ // singularity at north pole
+
+		_ang << 2 * std::atan2(q_data[0], q_data[3]), M_PI / 2, 0;
 		double temp[3] = {_ang[0] * 57.3, _ang[1] * 57.3, _ang[2] * 57.3};
 		vect3 euler_ang(temp, 3);
 		return euler_ang;
 	}
-	if (test < -0.49999*unit) { // singularity at south pole
-		_ang << -2 * std::atan2(q_data[0], q_data[3]), -M_PI/2, 0;
+	if (test < -0.49999 * unit)
+	{ // singularity at south pole
+		_ang << -2 * std::atan2(q_data[0], q_data[3]), -M_PI / 2, 0;
 		double temp[3] = {_ang[0] * 57.3, _ang[1] * 57.3, _ang[2] * 57.3};
 		vect3 euler_ang(temp, 3);
 		return euler_ang;
 	}
-		
-	_ang <<
-			std::atan2(2*q_data[0]*q_data[3]+2*q_data[1]*q_data[2] , -sqx - sqy + sqz + sqw),
-			std::asin (2*test/unit),
-			std::atan2(2*q_data[2]*q_data[3]+2*q_data[1]*q_data[0] , sqx - sqy - sqz + sqw);
+
+	_ang << std::atan2(2 * q_data[0] * q_data[3] + 2 * q_data[1] * q_data[2], -sqx - sqy + sqz + sqw),
+		std::asin(2 * test / unit),
+		std::atan2(2 * q_data[2] * q_data[3] + 2 * q_data[1] * q_data[0], sqx - sqy - sqz + sqw);
 	double temp[3] = {_ang[0] * 57.3, _ang[1] * 57.3, _ang[2] * 57.3};
 	vect3 euler_ang(temp, 3);
 	return euler_ang;
@@ -182,49 +185,50 @@ vect3 SO3ToEuler(const SO3 &orient)
 void h_model_input(state_input &s, esekfom::dyn_share_modified<double> &ekfom_data)
 {
 	bool match_in_map = false;
-	VF(4) pabcd;
+	VF(4)
+	pabcd;
 	pabcd.setZero();
 	normvec->resize(time_seq[k]);
 	int effect_num_k = 0;
 	for (int j = 0; j < time_seq[k]; j++)
 	{
-		PointType &point_body_j  = feats_down_body->points[idx+j+1];
-		PointType &point_world_j = feats_down_world->points[idx+j+1];
-		pointBodyToWorld(&point_body_j, &point_world_j); 
-		V3D p_body = pbody_list[idx+j+1];
+		PointType &point_body_j = feats_down_body->points[idx + j + 1];
+		PointType &point_world_j = feats_down_world->points[idx + j + 1];
+		pointBodyToWorld(&point_body_j, &point_world_j);
+		V3D p_body = pbody_list[idx + j + 1];
 		V3D p_world;
 		p_world << point_world_j.x, point_world_j.y, point_world_j.z;
-		
+
 		{
-			auto &points_near = Nearest_Points[idx+j+1];
-			
-			ikdtree.Nearest_Search(point_world_j, NUM_MATCH_POINTS, points_near, pointSearchSqDis, 2.236); //1.0); //, 3.0); // 2.236;
-			
+			auto &points_near = Nearest_Points[idx + j + 1];
+
+			ikdtree.Nearest_Search(point_world_j, NUM_MATCH_POINTS, points_near, pointSearchSqDis, 2.236); // 1.0); //, 3.0); // 2.236;
+
 			if ((points_near.size() < NUM_MATCH_POINTS) || pointSearchSqDis[NUM_MATCH_POINTS - 1] > 5) // 5)
 			{
-				point_selected_surf[idx+j+1] = false;
+				point_selected_surf[idx + j + 1] = false;
 			}
 			else
 			{
-				point_selected_surf[idx+j+1] = false;
+				point_selected_surf[idx + j + 1] = false;
 				if (esti_plane(pabcd, points_near, plane_thr)) //(planeValid)
 				{
 					float pd2 = pabcd(0) * point_world_j.x + pabcd(1) * point_world_j.y + pabcd(2) * point_world_j.z + pabcd(3);
-					
+
 					if (p_body.norm() > match_s * pd2 * pd2)
 					{
-						point_selected_surf[idx+j+1] = true;
+						point_selected_surf[idx + j + 1] = true;
 						normvec->points[j].x = pabcd(0);
 						normvec->points[j].y = pabcd(1);
 						normvec->points[j].z = pabcd(2);
 						normvec->points[j].intensity = pabcd(3);
-						effect_num_k ++;
+						effect_num_k++;
 					}
-				}  
+				}
 			}
 		}
 	}
-	if (effect_num_k == 0) 
+	if (effect_num_k == 0)
 	{
 		ekfom_data.valid = false;
 		return;
@@ -235,13 +239,13 @@ void h_model_input(state_input &s, esekfom::dyn_share_modified<double> &ekfom_da
 	int m = 0;
 	for (int j = 0; j < time_seq[k]; j++)
 	{
-		if(point_selected_surf[idx+j+1])
+		if (point_selected_surf[idx + j + 1])
 		{
 			V3D norm_vec(normvec->points[j].x, normvec->points[j].y, normvec->points[j].z);
-			
+
 			if (extrinsic_est_en)
 			{
-				V3D p_body = pbody_list[idx+j+1];
+				V3D p_body = pbody_list[idx + j + 1];
 				M3D p_crossmat, p_imu_crossmat;
 				p_crossmat << SKEW_SYM_MATRX(p_body);
 				V3D point_imu = s.offset_R_L_I.normalized() * p_body + s.offset_T_L_I;
@@ -252,13 +256,13 @@ void h_model_input(state_input &s, esekfom::dyn_share_modified<double> &ekfom_da
 				ekfom_data.h_x.block<1, 12>(m, 0) << norm_vec(0), norm_vec(1), norm_vec(2), VEC_FROM_ARRAY(A), VEC_FROM_ARRAY(B), VEC_FROM_ARRAY(C);
 			}
 			else
-			{   
-				M3D point_crossmat = crossmat_list[idx+j+1];
+			{
+				M3D point_crossmat = crossmat_list[idx + j + 1];
 				V3D C(s.rot.conjugate().normalized() * norm_vec);
 				V3D A(point_crossmat * C);
 				ekfom_data.h_x.block<1, 12>(m, 0) << norm_vec(0), norm_vec(1), norm_vec(2), VEC_FROM_ARRAY(A), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 			}
-			ekfom_data.z(m) = -norm_vec(0) * feats_down_world->points[idx+j+1].x -norm_vec(1) * feats_down_world->points[idx+j+1].y -norm_vec(2) * feats_down_world->points[idx+j+1].z-normvec->points[j].intensity;
+			ekfom_data.z(m) = -norm_vec(0) * feats_down_world->points[idx + j + 1].x - norm_vec(1) * feats_down_world->points[idx + j + 1].y - norm_vec(2) * feats_down_world->points[idx + j + 1].z - normvec->points[j].intensity;
 			m++;
 		}
 	}
@@ -268,50 +272,51 @@ void h_model_input(state_input &s, esekfom::dyn_share_modified<double> &ekfom_da
 void h_model_output(state_output &s, esekfom::dyn_share_modified<double> &ekfom_data)
 {
 	bool match_in_map = false;
-	VF(4) pabcd;
+	VF(4)
+	pabcd;
 	pabcd.setZero();
-	
+
 	normvec->resize(time_seq[k]);
 	int effect_num_k = 0;
 	for (int j = 0; j < time_seq[k]; j++)
 	{
-		PointType &point_body_j  = feats_down_body->points[idx+j+1];
-		PointType &point_world_j = feats_down_world->points[idx+j+1];
-		pointBodyToWorld(&point_body_j, &point_world_j); 
-		V3D p_body = pbody_list[idx+j+1];
+		PointType &point_body_j = feats_down_body->points[idx + j + 1];
+		PointType &point_world_j = feats_down_world->points[idx + j + 1];
+		pointBodyToWorld(&point_body_j, &point_world_j);
+		V3D p_body = pbody_list[idx + j + 1];
 		V3D p_world;
 		p_world << point_world_j.x, point_world_j.y, point_world_j.z;
 		{
-			auto &points_near = Nearest_Points[idx+j+1];
-			
-			ikdtree.Nearest_Search(point_world_j, NUM_MATCH_POINTS, points_near, pointSearchSqDis, 2.236); 
-			
+			auto &points_near = Nearest_Points[idx + j + 1];
+
+			ikdtree.Nearest_Search(point_world_j, NUM_MATCH_POINTS, points_near, pointSearchSqDis, 2.236);
+
 			if ((points_near.size() < NUM_MATCH_POINTS) || pointSearchSqDis[NUM_MATCH_POINTS - 1] > 5)
 			{
-				point_selected_surf[idx+j+1] = false;
+				point_selected_surf[idx + j + 1] = false;
 			}
 			else
 			{
-				point_selected_surf[idx+j+1] = false;
+				point_selected_surf[idx + j + 1] = false;
 				if (esti_plane(pabcd, points_near, plane_thr)) //(planeValid)
 				{
 					float pd2 = pabcd(0) * point_world_j.x + pabcd(1) * point_world_j.y + pabcd(2) * point_world_j.z + pabcd(3);
-					
+
 					if (p_body.norm() > match_s * pd2 * pd2)
 					{
 						// point_selected_surf[i] = true;
-						point_selected_surf[idx+j+1] = true;
+						point_selected_surf[idx + j + 1] = true;
 						normvec->points[j].x = pabcd(0);
 						normvec->points[j].y = pabcd(1);
 						normvec->points[j].z = pabcd(2);
 						normvec->points[j].intensity = pabcd(3);
-						effect_num_k ++;
+						effect_num_k++;
 					}
-				}  
+				}
 			}
 		}
 	}
-	if (effect_num_k == 0) 
+	if (effect_num_k == 0)
 	{
 		ekfom_data.valid = false;
 		return;
@@ -322,13 +327,13 @@ void h_model_output(state_output &s, esekfom::dyn_share_modified<double> &ekfom_
 	int m = 0;
 	for (int j = 0; j < time_seq[k]; j++)
 	{
-		if(point_selected_surf[idx+j+1])
+		if (point_selected_surf[idx + j + 1])
 		{
 			V3D norm_vec(normvec->points[j].x, normvec->points[j].y, normvec->points[j].z);
-			
+
 			if (extrinsic_est_en)
 			{
-				V3D p_body = pbody_list[idx+j+1];
+				V3D p_body = pbody_list[idx + j + 1];
 				M3D p_crossmat, p_imu_crossmat;
 				p_crossmat << SKEW_SYM_MATRX(p_body);
 				V3D point_imu = s.offset_R_L_I.normalized() * p_body + s.offset_T_L_I;
@@ -339,14 +344,14 @@ void h_model_output(state_output &s, esekfom::dyn_share_modified<double> &ekfom_
 				ekfom_data.h_x.block<1, 12>(m, 0) << norm_vec(0), norm_vec(1), norm_vec(2), VEC_FROM_ARRAY(A), VEC_FROM_ARRAY(B), VEC_FROM_ARRAY(C);
 			}
 			else
-			{   
-				M3D point_crossmat = crossmat_list[idx+j+1];
+			{
+				M3D point_crossmat = crossmat_list[idx + j + 1];
 				V3D C(s.rot.conjugate().normalized() * norm_vec);
 				V3D A(point_crossmat * C);
 				// V3D A(point_crossmat * state.rot_end.transpose() * norm_vec);
 				ekfom_data.h_x.block<1, 12>(m, 0) << norm_vec(0), norm_vec(1), norm_vec(2), VEC_FROM_ARRAY(A), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 			}
-			ekfom_data.z(m) = -norm_vec(0) * feats_down_world->points[idx+j+1].x -norm_vec(1) * feats_down_world->points[idx+j+1].y -norm_vec(2) * feats_down_world->points[idx+j+1].z-normvec->points[j].intensity;
+			ekfom_data.z(m) = -norm_vec(0) * feats_down_world->points[idx + j + 1].x - norm_vec(1) * feats_down_world->points[idx + j + 1].y - norm_vec(2) * feats_down_world->points[idx + j + 1].z - normvec->points[j].intensity;
 			m++;
 		}
 	}
@@ -355,43 +360,43 @@ void h_model_output(state_output &s, esekfom::dyn_share_modified<double> &ekfom_
 
 void h_model_IMU_output(state_output &s, esekfom::dyn_share_modified<double> &ekfom_data)
 {
-    std::memset(ekfom_data.satu_check, false, 6);
-	ekfom_data.z_IMU.block<3,1>(0, 0) = angvel_avr - s.omg - s.bg;
-	ekfom_data.z_IMU.block<3,1>(3, 0) = acc_avr * G_m_s2 / acc_norm - s.acc - s.ba;
-    ekfom_data.R_IMU << imu_meas_omg_cov, imu_meas_omg_cov, imu_meas_omg_cov, imu_meas_acc_cov, imu_meas_acc_cov, imu_meas_acc_cov;
-	if(check_satu)
+	std::memset(ekfom_data.satu_check, false, 6);
+	ekfom_data.z_IMU.block<3, 1>(0, 0) = angvel_avr - s.omg - s.bg;
+	ekfom_data.z_IMU.block<3, 1>(3, 0) = acc_avr * G_m_s2 / acc_norm - s.acc - s.ba;
+	ekfom_data.R_IMU << imu_meas_omg_cov, imu_meas_omg_cov, imu_meas_omg_cov, imu_meas_acc_cov, imu_meas_acc_cov, imu_meas_acc_cov;
+	if (check_satu)
 	{
-		if(fabs(angvel_avr(0)) >= 0.99 * satu_gyro)
+		if (fabs(angvel_avr(0)) >= 0.99 * satu_gyro)
 		{
-			ekfom_data.satu_check[0] = true; 
+			ekfom_data.satu_check[0] = true;
 			ekfom_data.z_IMU(0) = 0.0;
 		}
-		
-		if(fabs(angvel_avr(1)) >= 0.99 * satu_gyro) 
+
+		if (fabs(angvel_avr(1)) >= 0.99 * satu_gyro)
 		{
 			ekfom_data.satu_check[1] = true;
 			ekfom_data.z_IMU(1) = 0.0;
 		}
-		
-		if(fabs(angvel_avr(2)) >= 0.99 * satu_gyro)
+
+		if (fabs(angvel_avr(2)) >= 0.99 * satu_gyro)
 		{
 			ekfom_data.satu_check[2] = true;
 			ekfom_data.z_IMU(2) = 0.0;
 		}
-		
-		if(fabs(acc_avr(0)) >= 0.99 * satu_acc)
+
+		if (fabs(acc_avr(0)) >= 0.99 * satu_acc)
 		{
 			ekfom_data.satu_check[3] = true;
 			ekfom_data.z_IMU(3) = 0.0;
 		}
 
-		if(fabs(acc_avr(1)) >= 0.99 * satu_acc) 
+		if (fabs(acc_avr(1)) >= 0.99 * satu_acc)
 		{
 			ekfom_data.satu_check[4] = true;
 			ekfom_data.z_IMU(4) = 0.0;
 		}
 
-		if(fabs(acc_avr(2)) >= 0.99 * satu_acc) 
+		if (fabs(acc_avr(2)) >= 0.99 * satu_acc)
 		{
 			ekfom_data.satu_check[5] = true;
 			ekfom_data.z_IMU(5) = 0.0;
@@ -399,13 +404,13 @@ void h_model_IMU_output(state_output &s, esekfom::dyn_share_modified<double> &ek
 	}
 }
 
-void pointBodyToWorld(PointType const * const pi, PointType * const po)
-{    
-    V3D p_body(pi->x, pi->y, pi->z);
-    
-    V3D p_global;
+void pointBodyToWorld(PointType const *const pi, PointType *const po)
+{
+	V3D p_body(pi->x, pi->y, pi->z);
+
+	V3D p_global;
 	if (extrinsic_est_en)
-	{	
+	{
 		if (!use_imu_as_input)
 		{
 			p_global = kf_output.x_.rot.normalized() * (kf_output.x_.offset_R_L_I.normalized() * p_body + kf_output.x_.offset_T_L_I) + kf_output.x_.pos;
@@ -427,13 +432,13 @@ void pointBodyToWorld(PointType const * const pi, PointType * const po)
 		}
 	}
 
-    po->x = p_global(0);
-    po->y = p_global(1);
-    po->z = p_global(2);
-    po->intensity = pi->intensity;
+	po->x = p_global(0);
+	po->y = p_global(1);
+	po->z = p_global(2);
+	po->intensity = pi->intensity;
 }
 
-const bool time_list(PointType &x, PointType &y) {return (x.curvature < y.curvature);};
+const bool time_list(PointType &x, PointType &y) { return (x.curvature < y.curvature); };
 
 void h_model_VEL_output(state_output &s, esekfom::dyn_share_modified<double> &ekfom_data)
 {

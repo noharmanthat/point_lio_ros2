@@ -36,7 +36,8 @@ bool scan_pub_en, scan_body_pub_en;
 shared_ptr<Preprocess> p_pre;
 double time_lag_imu_to_lidar = 0.0;
 
-void readParameters(shared_ptr<rclcpp::Node> &nh) {
+void readParameters(shared_ptr<rclcpp::Node> &nh)
+{
     p_pre.reset(new Preprocess());
 
     nh->declare_parameter<bool>("odom_only", false);
@@ -166,4 +167,3 @@ void readParameters(shared_ptr<rclcpp::Node> &nh) {
     nh->get_parameter("pcd_save.pcd_save_en", pcd_save_en);
     nh->get_parameter("pcd_save.interval", pcd_save_interval);
 }
-

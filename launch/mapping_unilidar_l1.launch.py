@@ -21,6 +21,10 @@ def generate_launch_description():
         'wheel_vel_meas_cov', default_value='0.01',
         description='Wheel velocity measurement variance; lower trusts the wheels more.')
 
+    blind_arg = DeclareLaunchArgument(
+        'blind', default_value='0.5',
+        description='Minimum return range; ground points nearer than this are discarded.')
+
     # Node parameters, including those from the YAML configuration file
     laser_mapping_params = [
         PathJoinSubstitution([
@@ -40,6 +44,7 @@ def generate_launch_description():
             'runtime_pos_log_enable': False,  # Option: True
             'wheel.use_wheel_vel': ParameterValue(LaunchConfiguration('use_wheel_vel'), value_type=bool),
             'wheel.wheel_vel_meas_cov': ParameterValue(LaunchConfiguration('wheel_vel_meas_cov'), value_type=float),
+            'preprocess.blind': ParameterValue(LaunchConfiguration('blind'), value_type=float),
         }
     ]
 
@@ -71,6 +76,7 @@ def generate_launch_description():
         rviz_arg,
         use_wheel_vel_arg,
         wheel_vel_meas_cov_arg,
+        blind_arg,
         laser_mapping_node,
         GroupAction(
             actions=[rviz_node],
