@@ -22,8 +22,12 @@ def generate_launch_description():
         description='Wheel velocity measurement variance; lower trusts the wheels more.')
 
     blind_arg = DeclareLaunchArgument(
-        'blind', default_value='0.5',
+        'blind', default_value='0.3',
         description='Minimum return range; ground points nearer than this are discarded.')
+
+    imu_meas_acc_cov_arg = DeclareLaunchArgument(
+        'imu_meas_acc_cov', default_value='0.1',
+        description='Accelerometer measurement variance; lower pins roll/pitch harder.')
 
     # Node parameters, including those from the YAML configuration file
     laser_mapping_params = [
@@ -45,6 +49,7 @@ def generate_launch_description():
             'wheel.use_wheel_vel': ParameterValue(LaunchConfiguration('use_wheel_vel'), value_type=bool),
             'wheel.wheel_vel_meas_cov': ParameterValue(LaunchConfiguration('wheel_vel_meas_cov'), value_type=float),
             'preprocess.blind': ParameterValue(LaunchConfiguration('blind'), value_type=float),
+            'mapping.imu_meas_acc_cov': ParameterValue(LaunchConfiguration('imu_meas_acc_cov'), value_type=float),
         }
     ]
 
@@ -77,6 +82,7 @@ def generate_launch_description():
         use_wheel_vel_arg,
         wheel_vel_meas_cov_arg,
         blind_arg,
+        imu_meas_acc_cov_arg,
         laser_mapping_node,
         GroupAction(
             actions=[rviz_node],
